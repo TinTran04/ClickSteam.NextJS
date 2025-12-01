@@ -6,7 +6,7 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  url       = env("DATABASE_URL")  // Connection string from .env
+  url       = "postgresql://postgres.qlldrjpzoywnpmbegjck:toiyeuAWS123@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true"  // Connection string from .env
   directUrl = env("DIRECT_URL")    // Direct connection URL for migrations
 }
 
