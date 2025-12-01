@@ -50,7 +50,7 @@ const CategoryList = ({
           onClick={() => setSelectedCategory(null)}
           className="text-sm font-medium mt-2 underline underline-offset-2 decoration-[1px] hover:text-shop_dark_green hoverEffect text-left"
         >
-          Reset selection
+          Xóa lọc giá
         </button>
       )}
     </div>
