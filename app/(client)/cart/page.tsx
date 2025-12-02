@@ -8,9 +8,6 @@ import ProductSideMenu from "@/components/ProductSideMenu";
 import QuantityButtons from "@/components/QuantityButtons";
 import Title from "@/components/Title";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import {
   Tooltip,
@@ -19,24 +16,12 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import useStore from "@/store";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth } from "@/contexts/AuthContext";
 import { CheckCircle2, ShoppingBag, Trash } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import toast from "react-hot-toast";
-
-// Địa chỉ dùng cho UI (demo, không gửi lên Stripe)
-type Address = {
-  id: string;
-  name: string;
-  address: string;
-  city: string;
-  state: string;
-  zip: string;
-  country?: string;
-  default?: boolean;
-};
 
 const CartPage = () => {
   const {
@@ -51,39 +36,7 @@ const CartPage = () => {
   const { isSignedIn } = useAuth();
 
   const [loading, setLoading] = useState(false);
-  const [addresses, setAddresses] = useState<Address[]>([]);
-  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
-
-  // 📨 Lấy địa chỉ từ API (Prisma)
-  const fetchAddresses = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/addresses");
-      if (!res.ok) {
-        throw new Error("Failed to fetch addresses");
-      }
-      const data: Address[] = await res.json();
-      setAddresses(data);
-
-      const defaultAddress = data.find((addr) => addr.default);
-      if (defaultAddress) {
-        setSelectedAddress(defaultAddress);
-      } else if (data.length > 0) {
-        setSelectedAddress(data[0]);
-      }
-    } catch (error) {
-      console.log("Addresses fetching error:", error);
-      setAddresses([]);
-      setSelectedAddress(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchAddresses();
-  }, []);
 
   const handleResetCart = () => {
     const confirmed = window.confirm("Bạn có chắc muốn xóa toàn bộ giỏ hàng?");
@@ -93,10 +46,15 @@ const CartPage = () => {
     }
   };
 
-  // 🔹 Thanh toán GIẢ – không dùng Stripe
+  // 🔹 Thanh toán giả: không Stripe, không địa chỉ
   const handleCheckout = () => {
     if (!groupedItems.length) {
       toast.error("Giỏ hàng đang trống!");
+      return;
+    }
+
+    if (!isSignedIn) {
+      toast.error("Bạn cần đăng nhập trước khi thanh toán.");
       return;
     }
 
@@ -236,7 +194,7 @@ const CartPage = () => {
                   </div>
                 </div>
 
-                {/* RIGHT: Order summary + Address */}
+                {/* RIGHT: Order summary */}
                 <div>
                   <div className="lg:col-span-1 space-y-5">
                     {/* Order summary desktop */}
@@ -273,59 +231,6 @@ const CartPage = () => {
                         </Button>
                       </div>
                     </div>
-
-                    {/* Address list (demo giao hàng) */}
-                    {addresses.length > 0 && (
-                      <div className="bg-white rounded-md border shadow-sm">
-                        <Card className="border-0">
-                          <CardHeader>
-                            <CardTitle className="text-base font-semibold">
-                              Địa chỉ giao hàng
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <RadioGroup
-                              defaultValue={
-                                addresses.find((addr) => addr.default)?.id ??
-                                addresses[0]?.id
-                              }
-                            >
-                              {addresses.map((address) => (
-                                <div
-                                  key={address.id}
-                                  onClick={() => setSelectedAddress(address)}
-                                  className={`flex items-center space-x-2 mb-4 cursor-pointer ${
-                                    selectedAddress?.id === address.id &&
-                                    "text-shop_dark_green"
-                                  }`}
-                                >
-                                  <RadioGroupItem value={address.id} />
-                                  <Label
-                                    htmlFor={`address-${address.id}`}
-                                    className="grid gap-1.5 flex-1"
-                                  >
-                                    <span className="font-semibold">
-                                      {address.name}
-                                    </span>
-                                    <span className="text-sm text-black/60">
-                                      {address.address}, {address.city},{" "}
-                                      {address.state} {address.zip}
-                                    </span>
-                                  </Label>
-                                </div>
-                              ))}
-                            </RadioGroup>
-                            <Button
-                              variant="outline"
-                              className="w-full mt-4"
-                              type="button"
-                            >
-                              Thêm địa chỉ mới
-                            </Button>
-                          </CardContent>
-                        </Card>
-                      </div>
-                    )}
                   </div>
                 </div>
 
@@ -374,7 +279,6 @@ const CartPage = () => {
           {/* POPUP thanh toán thành công */}
           {showSuccess && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-              {/* click ra ngoài để đóng */}
               <div
                 className="absolute inset-0"
                 onClick={() => setShowSuccess(false)}

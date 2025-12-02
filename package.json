@@ -11,7 +11,7 @@
     "db:seed": "prisma db seed"
   },
   "dependencies": {
-    "@clerk/nextjs": "^6.12.6",
+    "@aws-amplify/ui-react": "^5.3.3",
     "@prisma/client": "^5.19.0",
     "@radix-ui/react-accordion": "^1.2.3",
     "@radix-ui/react-checkbox": "^1.1.4",
@@ -26,6 +26,8 @@
     "@radix-ui/react-tooltip": "^1.1.8",
     "@sanity/image-url": "^1.1.0",
     "@sanity/vision": "^3.80.1",
+    "amazon-cognito-identity-js": "^6.3.16",
+    "aws-amplify": "^5.3.29",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",

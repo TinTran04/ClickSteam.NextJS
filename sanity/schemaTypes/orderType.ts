@@ -34,7 +34,7 @@ export const orderType = defineType({
       validation: (Rule) => Rule.required(),
     }),
     defineField({
-      name: "clerkUserId",
+      name: "userId",
       title: "Store User ID",
       type: "string",
       validation: (Rule) => Rule.required(),
@@ -158,7 +158,12 @@ export const orderType = defineType({
       email: "email",
     },
     prepare(select) {
-      const orderIdSnippet = `${select.orderId.slice(0, 5)}...${select.orderId.slice(-5)}`;
+      const orderId = select.orderId || "";
+      const orderIdSnippet =
+        orderId.length > 10
+          ? `${orderId.slice(0, 5)}...${orderId.slice(-5)}`
+          : orderId;
+
       return {
         title: `${select.name} (${orderIdSnippet})`,
         subtitle: `${select.amount} ${select.currency}, ${select.email}`,

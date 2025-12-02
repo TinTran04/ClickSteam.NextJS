@@ -1,5 +1,5 @@
 // app/(client)/shop/page.tsx
-import React from "react";
+import React, { Suspense } from "react";
 import Shop from "@/components/Shop";
 import prisma from "@/lib/prisma";
 
@@ -48,8 +48,11 @@ const ShopPage = async () => {
 
   return (
     <div className="bg-white">
-      {/* ép kiểu any để tái sử dụng component Shop cũ */}
-      <Shop categories={categories as any} brands={brands as any} />
+      {/* Bọc Shop trong Suspense để thỏa yêu cầu useSearchParams */}
+      <Suspense fallback={<div className="p-4">Loading products...</div>}>
+        {/* ép kiểu any để tái sử dụng component Shop cũ */}
+        <Shop categories={categories as any} brands={brands as any} />
+      </Suspense>
     </div>
   );
 };

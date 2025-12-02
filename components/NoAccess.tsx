@@ -7,8 +7,8 @@ import {
   CardTitle,
 } from "./ui/card";
 import Logo from "./Logo";
-import { SignInButton, SignUpButton } from "@clerk/nextjs";
 import { Button } from "./ui/button";
+import Link from "next/link";
 
 const NoAccess = ({
   details = "Log in to view your cart items and checkout. Don't miss out on your favorite products!",
@@ -26,21 +26,22 @@ const NoAccess = ({
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-center font-medium text-darkColor/80">{details}</p>
-          <SignInButton mode="modal">
-            <Button className="w-full" size="lg">
-              Sign in
-            </Button>
-          </SignInButton>
+
+          {/* Nút Sign in */}
+          <Button className="w-full" size="lg" asChild>
+            <Link href="/sign-in">Sign in</Link>
+          </Button>
         </CardContent>
         <CardFooter className="flex flex-col space-y-2">
           <div className="text-sm text-muted-foreground text-center">
             Don&rsquo;t have an account?
           </div>
-          <SignUpButton mode="modal">
-            <Button variant="outline" className="w-full" size="lg">
-              Create an account
-            </Button>
-          </SignUpButton>
+
+          {/* Nút Create account – tạm dẫn tới /sign-in, 
+             nếu sau này bạn tạo route /sign-up thì đổi href="/sign-up" */}
+          <Button variant="outline" className="w-full" size="lg" asChild>
+            <Link href="/sign-in">Create an account</Link>
+          </Button>
         </CardFooter>
       </Card>
     </div>

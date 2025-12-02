@@ -26,12 +26,16 @@ const BRAND_QUERY = defineQuery(`*[_type == "product" && slug.current == $slug]{
   "brandName": brand->title
   }`);
 
-const MY_ORDERS_QUERY =
-  defineQuery(`*[_type == 'order' && clerkUserId == $userId] | order(orderData desc){
-...,products[]{
-  ...,product->
-}
-}`);
+const MY_ORDERS_QUERY = defineQuery(
+  `*[_type == 'order' && userId == $userId] | order(orderDate desc){
+    ...,
+    products[]{
+      ...,
+      product->
+    }
+  }`
+);
+
 const GET_ALL_BLOG = defineQuery(
   `*[_type == 'blog'] | order(publishedAt desc)[0...$quantity]{
   ...,  
@@ -42,8 +46,8 @@ const GET_ALL_BLOG = defineQuery(
   `
 );
 
-const SINGLE_BLOG_QUERY =
-  defineQuery(`*[_type == "blog" && slug.current == $slug][0]{
+const SINGLE_BLOG_QUERY = defineQuery(
+  `*[_type == "blog" && slug.current == $slug][0]{
   ..., 
     author->{
     name,
@@ -53,7 +57,8 @@ const SINGLE_BLOG_QUERY =
     title,
     "slug": slug.current,
   },
-}`);
+}`
+);
 
 const BLOG_CATEGORIES = defineQuery(
   `*[_type == "blog"]{
@@ -63,12 +68,13 @@ const BLOG_CATEGORIES = defineQuery(
   }`
 );
 
-const OTHERS_BLOG_QUERY = defineQuery(`*[
+const OTHERS_BLOG_QUERY = defineQuery(
+  `*[
   _type == "blog"
   && defined(slug.current)
   && slug.current != $slug
 ]|order(publishedAt desc)[0...$quantity]{
-...
+  ...
   publishedAt,
   title,
   mainImage,
@@ -81,7 +87,9 @@ const OTHERS_BLOG_QUERY = defineQuery(`*[
     title,
     "slug": slug.current,
   }
-}`);
+}`
+);
+
 export {
   BRANDS_QUERY,
   LATEST_BLOG_QUERY,

@@ -6,8 +6,21 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  url       = "postgresql://postgres.qlldrjpzoywnpmbegjck:toiyeuAWS123@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true"  // Connection string from .env
+  // Lấy connection string từ .env cho an toàn
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")    // Direct connection URL for migrations
+}
+
+// 🔹 User model – lưu Cognito userId (sub) + email
+model User {
+  id        String   @id              // Cognito sub
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders    Order[]
+  addresses Address[]
 }
 
 // Product model
@@ -30,16 +43,14 @@ model Product {
 
   images      String[] @default([])                  // Array URL ảnh
 
-  createdAt   DateTime @default(now())              // Creation timestamp
-  updatedAt   DateTime @updatedAt                   // Update timestamp
+  createdAt   DateTime @default(now())               // Creation timestamp
+  updatedAt   DateTime @updatedAt                    // Update timestamp
 
   // Inverse relation với OrderItem
   orderItems  OrderItem[]                            // One-to-many với OrderItem
 
-  @@index([slug])                                   // Index để lookup theo slug
+  @@index([slug])                                    // Index để lookup theo slug
 }
-
-
 
 // Category model
 model Category {
@@ -84,33 +95,35 @@ model BlogCategory {
 
 // Blog model
 model Blog {
-  id          String       @id @default(cuid())  // Auto-generated ID
-  title       String       // Blog title
-  slug        String       @unique               // Blog slug
-  content     String       // Content of the blog post
-  imageUrl    String?      // Optional image URL for the blog post
-  categoryId  String?      // Optional blog category reference
+  id          String        @id @default(cuid())  // Auto-generated ID
+  title       String        // Blog title
+  slug        String        @unique               // Blog slug
+  content     String        // Content of the blog post
+  imageUrl    String?       // Optional image URL for the blog post
+  categoryId  String?       // Optional blog category reference
   blogCategory BlogCategory? @relation(fields: [categoryId], references: [id])
 
-  createdAt   DateTime     @default(now())  // Creation timestamp
-  updatedAt   DateTime     @updatedAt        // Update timestamp
+  createdAt   DateTime      @default(now())  // Creation timestamp
+  updatedAt   DateTime      @updatedAt       // Update timestamp
 
-  // Add this field to establish the inverse relationship
+  // Inverse relationship to Author
   authorId    String
-  author      Author       @relation(fields: [authorId], references: [id])
+  author      Author        @relation(fields: [authorId], references: [id])
 }
-
 
 // Order model
 model Order {
   id            String      @id @default(cuid())   // Auto-generated ID
-  userId        String      // ID of the user placing the order
-  orderNumber   String      @unique               // Unique order number
+
+  userId        String                                     // ID of the user placing the order (Cognito sub)
+  user          User        @relation(fields: [userId], references: [id])
+
+  orderNumber   String      @unique                // Unique order number
   status        String      // Order status (e.g., pending, shipped)
   totalPrice    Int         // Total price of the order
   paymentStatus String      // Payment status (e.g., paid, pending)
-  createdAt     DateTime    @default(now())       // Order creation timestamp
-  updatedAt     DateTime    @updatedAt            // Order update timestamp
+  createdAt     DateTime    @default(now())        // Order creation timestamp
+  updatedAt     DateTime    @updatedAt             // Order update timestamp
 
   items         OrderItem[] // One-to-many relation with OrderItem
 }
@@ -129,18 +142,21 @@ model OrderItem {
 
 // Address model
 model Address {
-  id          String   @id @default(cuid())  // Auto-generated ID
-  userId      String   // Reference to the user
-  name        String   // Name of the person receiving the delivery
-  addressLine1 String  // Address line 1 (e.g., street address)
-  addressLine2 String? // Address line 2 (optional)
-  city        String   // City
-  state       String   // State/Province
-  zipCode     String   // Postal code
-  country     String   // Country
+  id           String   @id @default(cuid())  // Auto-generated ID
 
-  createdAt   DateTime @default(now())  // Address creation timestamp
-  updatedAt   DateTime @updatedAt      // Address update timestamp
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+
+  name         String   // Name of the person receiving the delivery
+  addressLine1 String   // Address line 1 (e.g., street address)
+  addressLine2 String?  // Address line 2 (optional)
+  city         String   // City
+  state        String   // State/Province
+  zipCode      String   // Postal code
+  country      String   // Country
+
+  createdAt    DateTime @default(now())   // Address creation timestamp
+  updatedAt    DateTime @updatedAt        // Address update timestamp
 }
 
 // Author model (for blog authors)
@@ -151,7 +167,5 @@ model Author {
   imageUrl    String?  // Optional image URL for author
   blogPosts   Blog[]   // One-to-many relationship with Blog posts
   createdAt   DateTime @default(now())  // Creation timestamp
-  updatedAt   DateTime @updatedAt      // Update timestamp
+  updatedAt   DateTime @updatedAt       // Update timestamp
 }
-
-

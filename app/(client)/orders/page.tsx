@@ -5,14 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Table, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getMyOrders } from "@/sanity/queries";
-// import { auth } from "@clerk/nextjs/server";
 import { FileX } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import React from "react";
+import { cookies } from "next/headers"; // 👈 thêm
 
 const OrdersPage = async () => {
-  const { userId } = await auth();
+  // 👇 Lấy userId từ cookie (được set sau khi đăng nhập Cognito)
+  const cookieStore = cookies();
+  const userId = cookieStore.get("userId")?.value || null;
+
   if (!userId) {
     return redirect("/");
   }

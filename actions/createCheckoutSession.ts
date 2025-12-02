@@ -10,7 +10,7 @@ export interface Metadata {
   orderNumber: string;
   customerName: string;
   customerEmail: string;
-  clerkUserId?: string;
+  userId: string;            // 👈 Cognito userId (sub)
   address?: Address | null;
 }
 
@@ -21,23 +21,25 @@ export interface GroupedCartItems {
 
 export async function createCheckoutSession(
   items: GroupedCartItems[],
-  metadata: Metadata
+  metadata: Metadata,
 ) {
   try {
-    // Retrieve existing customer or create a new one
+    // Tìm customer Stripe theo email (nếu có sẵn)
     const customers = await stripe.customers.list({
       email: metadata.customerEmail,
       limit: 1,
     });
-    const customerId = customers?.data?.length > 0 ? customers.data[0].id : "";
+    const customerId = customers?.data?.length ? customers.data[0].id : "";
 
     const sessionPayload: Stripe.Checkout.SessionCreateParams = {
       metadata: {
         orderNumber: metadata.orderNumber,
         customerName: metadata.customerName,
         customerEmail: metadata.customerEmail,
-        clerkUserId: metadata.clerkUserId!,
-        address: JSON.stringify(metadata.address),
+        userId: metadata.userId,
+        ...(metadata.address
+          ? { address: JSON.stringify(metadata.address) }
+          : {}),
       },
       mode: "payment",
       allow_promotion_codes: true,
@@ -47,25 +49,28 @@ export async function createCheckoutSession(
       },
       success_url: `${
         process.env.NEXT_PUBLIC_BASE_URL
-      }/success?session_id={CHECKOUT_SESSION_ID}&orderNumber=${metadata.orderNumber}`,
+      }/success?session_id={CHECKOUT_SESSION_ID}&orderNumber=${
+        metadata.orderNumber
+      }`,
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/cart`,
-      line_items: items?.map((item) => ({
+      line_items: items.map((item) => ({
         price_data: {
           currency: "USD",
-          unit_amount: Math.round(item?.product?.price! * 100),
+          unit_amount: Math.round(item.product.price! * 100),
           product_data: {
-            name: item?.product?.name || "Unknown Product",
-            description: item?.product?.description,
-            metadata: { id: item?.product?._id },
+            name: item.product.name || "Unknown Product",
+            description: item.product.description,
+            metadata: { id: item.product._id },
             images:
-              item?.product?.images && item?.product?.images?.length > 0
-                ? [urlFor(item?.product?.images[0]).url()]
+              item.product.images && item.product.images.length > 0
+                ? [urlFor(item.product.images[0]).url()]
                 : undefined,
           },
         },
-        quantity: item?.quantity,
+        quantity: item.quantity,
       })),
     };
+
     if (customerId) {
       sessionPayload.customer = customerId;
     } else {

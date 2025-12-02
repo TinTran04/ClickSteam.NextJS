@@ -7,7 +7,7 @@ import Stripe from "stripe";
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
-  const headersList = await headers();
+  const headersList = headers();
   const sig = headersList.get("stripe-signature");
 
   if (!sig) {
@@ -65,22 +65,18 @@ async function createOrderInDb(
   session: Stripe.Checkout.Session,
   invoice: Stripe.Invoice | null,
 ) {
-  const {
-    id,
-    amount_total,
-    metadata,
-    payment_status,
-  } = session;
+  const { id, amount_total, metadata, payment_status } = session;
 
   const {
     orderNumber,
     customerName,
     customerEmail,
-    clerkUserId,
+    userId,
     address,
   } = metadata as unknown as Metadata & { address?: string };
-  if (!clerkUserId) {
-    throw new Error("clerkUserId is missing in Stripe session metadata");
+
+  if (!userId) {
+    throw new Error("userId is missing in Stripe session metadata");
   }
 
   const parsedAddress = address ? JSON.parse(address) : null;
@@ -122,10 +118,10 @@ async function createOrderInDb(
     if (parsedAddress) {
       await tx.address.create({
         data: {
-          userId: clerkUserId,                        // userId bắt buộc
+          userId,                               // dùng Cognito userId
           name: parsedAddress.name,
-          addressLine1: parsedAddress.address,        // map sang line1
-          addressLine2: null,                         // không có thì để null
+          addressLine1: parsedAddress.address,  // map sang line1
+          addressLine2: null,                   // không có thì để null
           city: parsedAddress.city,
           state: parsedAddress.state,
           zipCode: parsedAddress.zip,
@@ -137,9 +133,9 @@ async function createOrderInDb(
     // 2. Tạo Order + OrderItems
     const order = await tx.order.create({
       data: {
-        userId: clerkUserId,
+        userId,
         orderNumber,
-        status: "paid",                               // tuỳ bạn: "paid" / "completed"
+        status: "paid", // tuỳ bạn: "paid" / "completed"
         totalPrice: Math.round((amount_total ?? 0) / 100),
         paymentStatus: payment_status ?? "paid",
 
@@ -169,4 +165,3 @@ async function createOrderInDb(
     return order;
   });
 }
-

@@ -13,16 +13,43 @@ import { urlFor } from "@/sanity/lib/image";
 import PriceFormatter from "./PriceFormatter";
 import AddToCartButton from "./AddToCartButton";
 
+// Helper: lấy URL ảnh cho cả data mới (string) lẫn data cũ (Sanity image)
+const getProductImageUrl = (product: Product): string => {
+  const images = (product as any).images as any[] | undefined;
+  if (!images || images.length === 0) {
+    return "/images/placeholder.jpg"; // đổi sang ảnh fallback của bạn nếu muốn
+  }
+
+  const first = images[0];
+
+  // TH mới: mảng string: "/images/products/product_24.jpg"
+  if (typeof first === "string") {
+    return first;
+  }
+
+  // TH cũ: Sanity image object
+  try {
+    if ((first as any)?.asset) {
+      return urlFor(first).url();
+    }
+  } catch (e) {
+    console.warn("getProductImageUrl error:", e);
+  }
+
+  return "/images/placeholder.jpg";
+};
+
 const WishListProducts = () => {
   const [visibleProducts, setVisibleProducts] = useState(7);
   const { favoriteProduct, removeFromFavorite, resetFavorite } = useStore();
+
   const loadMore = () => {
     setVisibleProducts((prev) => Math.min(prev + 5, favoriteProduct.length));
   };
 
   const handleResetWishlist = () => {
     const confirmReset = window.confirm(
-      "Are you sure you want to reset your wishlist?"
+      "Are you sure you want to reset your wishlist?",
     );
     if (confirmReset) {
       resetFavorite();
@@ -51,65 +78,85 @@ const WishListProducts = () => {
               <tbody>
                 {favoriteProduct
                   ?.slice(0, visibleProducts)
-                  ?.map((product: Product) => (
-                    <tr key={product?._id} className="border-b">
-                      <td className="px-2 py-4 flex items-center gap-2">
-                        <X
-                          onClick={() => {
-                            removeFromFavorite(product?._id);
-                            toast.success("Product removed from wishlist");
-                          }}
-                          size={18}
-                          className="hover:text-red-600 hover:cursor-pointer hoverEffect"
-                        />
-                        {product?.images && (
-                          <Link
-                            href={`/product/${product?.slug?.current}`}
-                            className="border rounded-md group hidden md:inline-flex"
-                          >
-                            <Image
-                              src={urlFor(product?.images[0]).url()}
-                              alt={"product image"}
-                              width={80}
-                              height={80}
-                              className="rounded-md group-hover:scale-105 hoverEffect h-20 w-20 object-contain"
-                            />
-                          </Link>
-                        )}
-                        <p className="line-clamp-1">{product?.name}</p>
-                      </td>
-                      <td className="p-2 capitalize hidden md:table-cell">
-                        {product?.categories && (
-                          <p className="uppercase line-clamp-1 text-xs font-medium">
-                            {product.categories.map((cat) => cat).join(", ")}
-                          </p>
-                        )}
-                      </td>
-                      <td className="p-2 capitalize hidden md:table-cell">
-                        {product?.variant}
-                      </td>
-                      <td
-                        className={`p-2 w-24 ${
-                          (product?.stock as number) > 0
-                            ? "text-green-600"
-                            : "text-red-600"
-                        } font-medium text-sm hidden md:table-cell`}
-                      >
-                        {(product?.stock as number) > 0
-                          ? "In Stock"
-                          : "Out of Stock"}
-                      </td>
-                      <td className="p-2">
-                        <PriceFormatter amount={product?.price} />
-                      </td>
-                      <td className="p-2">
-                        <AddToCartButton product={product} className="w-full" />
-                      </td>
-                    </tr>
-                  ))}
+                  ?.map((product: Product) => {
+                    const imageUrl = getProductImageUrl(product);
+
+                    return (
+                      <tr key={product?._id} className="border-b">
+                        <td className="px-2 py-4 flex items-center gap-2">
+                          <X
+                            onClick={() => {
+                              removeFromFavorite(product?._id);
+                              toast.success("Product removed from wishlist");
+                            }}
+                            size={18}
+                            className="hover:text-red-600 hover:cursor-pointer hoverEffect"
+                          />
+
+                          {imageUrl && (
+                            <Link
+                              href={`/product/${product?.slug?.current}`}
+                              className="border rounded-md group hidden md:inline-flex"
+                            >
+                              <Image
+                                src={imageUrl}
+                                alt="product image"
+                                width={80}
+                                height={80}
+                                className="rounded-md group-hover:scale-105 hoverEffect h-20 w-20 object-contain"
+                              />
+                            </Link>
+                          )}
+
+                          <p className="line-clamp-1">{product?.name}</p>
+                        </td>
+
+                        <td className="p-2 capitalize hidden md:table-cell">
+                          {product?.categories && (
+                            <p className="uppercase line-clamp-1 text-xs font-medium">
+                              {/* nếu categories là string[] hoặc object[] đều ổn hơn */}
+                              {(product.categories as any[])
+                                .map((cat: any) =>
+                                  typeof cat === "string"
+                                    ? cat
+                                    : cat.title || cat.name || "",
+                                )
+                                .filter(Boolean)
+                                .join(", ")}
+                            </p>
+                          )}
+                        </td>
+
+                        <td className="p-2 capitalize hidden md:table-cell">
+                          {product?.variant}
+                        </td>
+
+                        <td
+                          className={`p-2 w-24 ${
+                            (product?.stock as number) > 0
+                              ? "text-green-600"
+                              : "text-red-600"
+                          } font-medium text-sm hidden md:table-cell`}
+                        >
+                          {(product?.stock as number) > 0
+                            ? "In Stock"
+                            : "Out of Stock"}
+                        </td>
+
+                        <td className="p-2">
+                          <PriceFormatter amount={product?.price as number} />
+                        </td>
+
+                        <td className="p-2">
+                          <AddToCartButton product={product} className="w-full" />
+                        </td>
+                      </tr>
+                    );
+                  })}
               </tbody>
             </table>
           </div>
+
           <div className="flex items-center gap-2">
             {visibleProducts < favoriteProduct?.length && (
               <div className="my-5">
@@ -129,6 +176,7 @@ const WishListProducts = () => {
               </div>
             )}
           </div>
+
           {favoriteProduct?.length > 0 && (
             <Button
               onClick={handleResetWishlist}
