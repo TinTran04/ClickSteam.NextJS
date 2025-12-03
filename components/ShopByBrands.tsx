@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { GitCompareArrows, Headset, ShieldCheck, Truck } from "lucide-react";
 import prisma from "@/lib/prisma";
+import { getMediaUrl } from "@/lib/getMediaUrl";
 
 const extraData = [
   {
@@ -56,7 +57,7 @@ const ShopByBrands = async () => {
           >
             {brand.imageUrl ? (
               <Image
-                src={brand.imageUrl}
+                src={getMediaUrl(brand.imageUrl)}
                 alt={brand.name}
                 width={250}
                 height={250}
